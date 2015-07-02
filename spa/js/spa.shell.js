@@ -9,7 +9,7 @@ spa.shell = (function () {
   var
     configMap = {
       anchor_schema_map: {
-        chat: { open: true, closed: true }
+        chat: { opened: true, closed: true }
       },
       main_html : String()
         + '<div class="spa-shell-head">'
@@ -22,26 +22,17 @@ spa.shell = (function () {
           + '<div class="spa-shell-main-content"></div>'
         + '</div>'
         + '<div class="spa-shell-foot"></div>'
-        + '<div class="spa-shell-chat"></div>'
         + '<div class="spa-shell-modal"></div>'
-        + '<div class="">',
-      chat_extend_time: 250,
-      chat_retract_time: 300,
-      chat_extend_height: 450,
-      chat_retract_height: 15,
-      chat_extended_title: 'click to retract',
-      chat_retracted_title: 'click to extend'
+        + '<div class="">'
     },
     stateMap = {
-      $container: null,
-      anchor_map: {},
-      is_chat_retracted: true
+      anchor_map: {}
     },
     jqueryMap = {},
 
     copyAnchorMap, setJqueryMap, toggleChat,
     changeAnchorPart, onHashchange,
-    onClickChat, initModule;
+    setChatAnchor, initModule;
 
   //utility methods
   //return copy of stored anchor map; minimizes overhead
@@ -53,8 +44,7 @@ spa.shell = (function () {
   setJqueryMap = function () {
     var $container = stateMap.$container;
     jqueryMap = {
-      $container: $container,
-      $chat: $container.find( '.spa-shell-chat' )
+      $container: $container
     };
   };
 
@@ -143,6 +133,7 @@ spa.shell = (function () {
   onHashchange = function ( event ) {
     var
       anchor_map_previous = copyAnchorMap(),
+      is_ok = true,
       anchor_map_proposed,
       _s_chat_previous, _s_chat_proposed, s_chat_proposed;
 
@@ -166,30 +157,34 @@ spa.shell = (function () {
     ) {
       s_chat_proposed = anchor_map_proposed.chat;
       switch ( s_chat_proposed ) {
-        case 'open':
-          toggleChat( true );
-          break;
+        case 'opened':
+          is_ok = spa.chat.setSliderPosition( 'opened' );
+        break;
         case 'closed':
-          toggleChat( false );
-          break;
+          is_ok = spa.chat.setSliderPosition( 'closed' );
+        break;
         default:
-          toggleChat( false );
+          spa.chat.setSliderPosition( 'closed' );
           delete anchor_map_proposed.chat;
           $.uriAnchor.setAnchor( anchor_map_proposed, null, true );
+      }
+    }
+
+    //revert anchor if slider change denied
+    if ( !is_ok ) {
+      if ( anchor_map_previous ) {
+        $.uriAnchor.setAnchor( anchor_map_previous, null, true );
+        stateMap.anchor_map = anchor_map_previous;
+      } else {
+        delete anchor_map_proposed.chat;
+        $.uriAnchor.setAnchor( anchor_map_proposed, null, true );
       }
     }
 
     return false;
   };
 
-  //event handler /onClickChat/
-  onClickChat = function ( event ) {
-    changeAnchorPart({
-      chat: ( stateMap.is_chat_retracted ? 'open' : 'closed' )
-    });
-
-    return false;
-  }
+  //TODO
 
   //public method /initModule/
   initModule = function ( $container ) {
