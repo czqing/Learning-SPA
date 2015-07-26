@@ -5,6 +5,7 @@
 
 /* global $, spa */
 spa.shell = (function () {
+  'use strict';
   //module scope variables
   var
     configMap = {
@@ -14,7 +15,10 @@ spa.shell = (function () {
       resize_interval: 200,
       main_html : String()
         + '<div class="spa-shell-head">'
-          + '<div class="spa-shell-head-logo"></div>'
+          + '<div class="spa-shell-head-logo">'
+            + '<h1>SPA</h1>'
+            + '<p>javascript end to end</p>'
+          + '</div>'
           + '<div class="spa-shell-head-acct"></div>'
           + '<div class="spa-shell-head-search"></div>'
         + '</div>'
@@ -35,6 +39,7 @@ spa.shell = (function () {
 
     copyAnchorMap, setJqueryMap,
     changeAnchorPart, onHashchange, onResize,
+    onTapAcct, onLogin, onLogout,
     setChatAnchor, initModule;
 
   //utility methods
@@ -47,7 +52,9 @@ spa.shell = (function () {
   setJqueryMap = function () {
     var $container = stateMap.$container;
     jqueryMap = {
-      $container: $container
+      $container: $container,
+      $acct: $container.find('.spa-shell-head-acct'),
+      $nav: $container.find('.span-shell-main-nav')
     };
   };
 
@@ -200,6 +207,27 @@ spa.shell = (function () {
     return false;
   };
 
+  onTapAcct = function ( event ) {
+    var acct_text, user_name, user = spa.model.people.get_user();
+    if ( user.get_is_anon() ) {
+      user_name = prompt( 'Please sign-in' );
+      spa.model.people.login( user_name );
+      jqueryMap.$acct.text( '... processing ...' );
+    }
+    else {
+      spa.model.people.logout();
+    }
+    return false;
+  };
+
+  onLogin = function ( event, login_user ) {
+    jqueryMap.$acct.text( login_user.name );
+  };
+
+  onLogout = function ( event, logout_user ) {
+    jqueryMap.$acct.text( 'Please sign-in' );
+  };
+
   //callback method /setChatAnchor/
   setChatAnchor = function ( position_type ) {
     return changeAnchorPart({ chat: position_type });
@@ -230,6 +258,13 @@ spa.shell = (function () {
       .bind( 'resize', onResize )
       .bind( 'hashchange', onHashchange )
       .trigger( 'hashchange' );
+
+    $.gevent.subscribe( $container, 'spa-login', onLogin );
+    $.gevent.subscribe( $container, 'spa-logout', onLogout );
+
+    jqueryMap.$acct
+      .text( 'Please sign-in' )
+      .bind( 'utap', onTapAcct );
   };
 
   return { initModule: initModule };
