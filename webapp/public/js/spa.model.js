@@ -3,7 +3,7 @@
  * Model module
  */
 
-/* global TAFFY, spa */
+/* global $, TAFFY, spa */
 spa.model = (function () {
   'use strict';
   var
@@ -120,13 +120,12 @@ spa.model = (function () {
     };
 
     logout = function () {
-      var is_removed, user = stateMap.user;
+      var user = stateMap.user;
       chat._leave();
-      is_removed = removePerson( user );
       stateMap.usr = stateMap.anon_user;
+      clearPeopleDb();
 
       $.gevent.publish( 'spa-logout', [ user ] );
-      return is_removed;
     };
 
     return {
@@ -142,12 +141,12 @@ spa.model = (function () {
     var
       _publish_listchange, _publish_updatechat,
       _update_list, _leave_chat, join_chat,
-      get_chatee, send_msg, set_chatee,
+      get_chatee, send_msg, set_chatee, update_avatar,
       chatee = null;
 
     //begin internal mthods
     _update_list = function ( arg_list ) {
-      var i, person_map, make_person_map,
+      var i, person_map, make_person_map, person,
         people_list = arg_list[ 0 ],
         is_chatee_online = false;
 
@@ -171,8 +170,11 @@ spa.model = (function () {
           name: person_map.name
         };
 
+        person = makePerson( make_person_map );
+
         if ( chatee && chatee.id === make_person_map.id ) {
           is_chatee_online = true;
+          chatee = person;
         }
 
         makePerson( make_person_map );
@@ -261,6 +263,13 @@ spa.model = (function () {
       );
       chatee = new_chatee;
       return true;
+    };
+
+    update_avatar = function ( avatar_update_map ) {
+      var sio = isFakeData ? spa.fake.mockSio : spa.data.getSio();
+      if ( sio ) {
+        sio.emit ( 'updateavatar', avatar_update_map );
+      }
     };
 
     return {

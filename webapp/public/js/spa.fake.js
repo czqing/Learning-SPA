@@ -44,7 +44,7 @@ spa.fake = (function () {
     };
 
     emit_sio = function ( msg_type, data ) {
-      var person_map;
+      var i, person_map;
       //respond to 'adduser' event with 'userupdate'
       //callback after a 3s delay
       if ( msg_type === 'adduser' && callback_map.userupdate ) {
@@ -83,6 +83,19 @@ spa.fake = (function () {
           listchange_idto = undefined;
         }
         send_listchange();
+      }
+
+      //simulate send of 'updateavatar' message and data to server
+      if ( msg_type === 'updateavatar' && callback_map.listchange ) {
+        //simulate receipt of 'listchange' message
+        for ( i = 0; i < peopleList.length; i++ ) {
+          if ( peopleList[ i ]._id === data.person_id ) {
+            peopleList[ i ].css_map = data.css_map;
+            break;
+          }
+        }
+        //execute callback for the 'listchange' message
+        callback_map.listchange([ peopleList ]);
       }
     };
 
