@@ -211,6 +211,85 @@ spa.chat = (function () {
       scrollChat();
     };
 
+    clearChat = function () { jqueryMap.$msg_log.empty(); };
+
+    onSubmitMsg = function ( event ) {
+      var msg_text = jqueryMap.$input.val();
+      if ( msg_text.trim() === '' ) { return false; }
+      configMap.chat_model.send_msg( msg_text );
+      jqueryMap.$input.focus();
+      jqueryMap.$send.addClass( 'spa-x-select' );
+      setTimeOut(
+        function () { jqueryMap.$send.removeClass( 'spa-x-select' ); },
+        250
+      );
+      return false;
+    };
+
+    onTapList = function ( event ) {
+      var $tapped = $( event.elem_target ), chatee_id;
+      if ( ! $tapped.hasClass('spa-chat-list-name') ) { return false; }
+
+      chatee_id = $tapped.attr( 'data-id' );
+      if ( ! chatee_id ) { return false; }
+
+      configMap.chat_model.set_chatee( chatee_id );
+      return false;
+    };
+
+    onSetchatee = function ( event, arg_map ) {
+      var
+        new_chatee = arg_map.new_chatee,
+        old_chatee = arg_map.old_chatee;
+
+      jqueryMap.$input.focus();
+      if ( ! new_chatee ) {
+        if ( old_chatee ) {
+          writeAlert( old_chatee.name + ' has left the chat' );
+        }
+        else {
+          writeAlert( 'Your friend has left the chat' );
+        }
+        jqueryMap.$title.text( 'Chat' );
+        return false;
+      }
+
+      jqueryMap.$list_box
+        .find( '.spa-chat-list-name' )
+        .removeClass( 'spa-x-select' )
+        .end()
+        .find( '[data-id=' + arg_map.new_chatee.id + ']' )
+        .addClass( 'spa-x-select' );
+
+      writeAlert( 'Now chatting with ' + arg_map.new_chatee.name );
+      jqueryMap.$title.text( 'Chat with ' + arg_map.new_chatee.name );
+      return true;
+    };
+
+    onListChange = function ( event ) {
+      var
+        list_html = String(),
+        people_db = configMap.people_model.get_db(),
+        chatee = configMap.chat_model.get_chatee();
+
+      people_db().each( function ( person, idx ) {
+        var select_class = '';
+
+        if ( person.get_is_anon() || people.get_is_user() ) {
+          return true;
+        }
+        if ( chatee && chatee.id === person.id ) {
+          select_class = ' spa-x-select';
+        }
+        list_html
+          += '<div class="spa-chat-list-name'
+          + select_class + '" data-id="' + person.id + '">'
+          + spa.util_b.encodeHtml( person.name ) + '</div>';
+      });
+
+      //TODO
+    };
+
     //animate slider position change
     stateMap.position_type = '';
     jqueryMap.$slider.animate(
