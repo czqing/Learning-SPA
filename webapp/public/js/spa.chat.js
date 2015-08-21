@@ -287,7 +287,47 @@ spa.chat = (function () {
           + spa.util_b.encodeHtml( person.name ) + '</div>';
       });
 
-      //TODO
+      if ( ! list_html ) {
+        list_html = String()
+          + '<div class="spa-chat-list-note">'
+          + 'To chat alone is the fate of all great souls...<br><br>'
+          + 'No one is online'
+          + '</div>';
+        clearChat();
+      }
+
+      jqueryMap.$list_box.html( list_html );
+    };
+
+    onUpdatechat = function ( event, msg_map ) {
+      var
+        is_user,
+        sender_id = msg_map.sender_id,
+        msg_text = msg_map.msg_text,
+        chatee = configMap.chat_model.get_chatee() || {},
+        sender = configMap.people_model.get_by_cid( sender_id );
+
+      if ( ! sender ) {
+        writeAlert( msg_text );
+        return false;
+      }
+
+      is_user = sender.get_is_user();
+
+      if ( ! ( is_user || sender_id === chatee.id ) ) {
+        configMap.chat_model.set_chatee( sender_id );
+      }
+
+      writeAlert( sender.name, msg_text, is_user );
+
+      if ( is_user ) {
+        jqueryMap.$input.val( '' );
+        jqueryMap.$input.focus();
+      }
+    };
+
+    onLogin = function ( event, login_user ) {
+      configMap.set_chat_anchor( 'opened' );
     };
 
     //animate slider position change
