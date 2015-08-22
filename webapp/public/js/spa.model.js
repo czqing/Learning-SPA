@@ -179,7 +179,7 @@ spa.model = (function () {
 
         makePerson( make_person_map );
       }
-      stateMap.people_db.sotr( 'name' );
+      stateMap.people_db.sort( 'name' );
       //if chatee is nolonger online, we unset the chatee
       //which triggers the 'spa-setchatee' global event
       if ( chatee && ! is_chatee_online ) { set_chatee(''); }
