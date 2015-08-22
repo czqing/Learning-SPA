@@ -219,7 +219,7 @@ spa.chat = (function () {
       configMap.chat_model.send_msg( msg_text );
       jqueryMap.$input.focus();
       jqueryMap.$send.addClass( 'spa-x-select' );
-      setTimeOut(
+      setTimeout(
         function () { jqueryMap.$send.removeClass( 'spa-x-select' ); },
         250
       );
@@ -266,7 +266,7 @@ spa.chat = (function () {
       return true;
     };
 
-    onListChange = function ( event ) {
+    onListchange = function ( event ) {
       var
         list_html = String(),
         people_db = configMap.people_model.get_db(),
@@ -275,7 +275,7 @@ spa.chat = (function () {
       people_db().each( function ( person, idx ) {
         var select_class = '';
 
-        if ( person.get_is_anon() || people.get_is_user() ) {
+        if ( person.get_is_anon() || person.get_is_user() ) {
           return true;
         }
         if ( chatee && chatee.id === person.id ) {
@@ -328,6 +328,12 @@ spa.chat = (function () {
 
     onLogin = function ( event, login_user ) {
       configMap.set_chat_anchor( 'opened' );
+    };
+
+    onLogout = function ( event, logout_user ) {
+      configMap.set_chat_anchor( 'closed' );
+      jqueryMap.$title.text( 'chat' );
+      clearChat();
     };
 
     //animate slider position change
@@ -401,17 +407,31 @@ spa.chat = (function () {
 
   //public method /initModule/
   initModule = function ( $append_target ) {
-    $append_target.append( configMap.main_html );
+    var $list_box;
+
+    //load chat slider html and jquery cache
     stateMap.$append_target = $append_target;
+    $append_target.append( configMap.main_html );
     setJqueryMap();
     setPxSizes();
 
     //initialize chat slider to default title and state
     jqueryMap.$toggle.prop( 'title', configMap.slider_closed_title );
-    jqueryMap.$head.click( onTapToggle );
     stateMap.position_type = 'closed';
 
-    return true;
+    //have $list_box subscribe to jQuery global events
+    $list_box = jqueryMap.$list_box;
+    $.gevent.subscribe( $list_box, 'spa-listchange', onListchange );
+    $.gevent.subscribe( $list_box, 'spa-setchatee', onSetchatee );
+    $.gevent.subscribe( $list_box, 'spa-updatechat', onUpdatechat );
+    $.gevent.subscribe( $list_box, 'spa-login', onLogin );
+    $.gevent.subscribe( $list_box, 'spa-logout', onLogout );
+
+    //bind user input events
+    jqueryMap.$head.bind( 'utap', onTapToggle );
+    jqueryMap.$list_box.bind( 'utap', onTapList );
+    jqueryMap.$send.bind( 'utap', onSubmitMsg );
+    jqueryMap.$form.bind( 'submit', onSubmitMsg );
   };
 
   //return public methods
