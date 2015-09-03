@@ -5,7 +5,10 @@
 /* global */
 //module scope variables
 'use strict';
-var configRoutes,
+var
+  loadSchema,
+  configRoutes,
+  fsHandle = require( 'fs' ),
   mongodb = require( 'mongodb' ),
   mongoServer = new mongodb.Server(
     'localhost',
@@ -16,6 +19,13 @@ var configRoutes,
   ),
   makeMongoId = mongodb.ObjectID,
   objTypeMap = { 'user': {} };
+
+//utility methods
+loadSchema = function ( schema_name, schema_path ) {
+  fsHandle.readFile( schema_path, 'utf8', function ( err, data ) {
+    objTypeMap[ schema_name ] = JSON.parse( data );
+  });
+};
 
 //public methods
 configRoutes = function ( app, server ) {
@@ -139,3 +149,14 @@ module.exports = { configRoutes : configRoutes };
 dbHandle.open( function() {
   console.log( '** Connected to MongoDB **' );
 });
+
+//load schemas into memory (objTypeMap)
+(function () {
+  var schema_name, schema_path;
+  for ( schema_name in objTypeMap ) {
+    if ( objTypeMap.hasOwnProperty( schema_name ) ) {
+      schema_path = __dirname + '/' + schema_name + '.json';
+      loadSchema( schema_name, schema_path );
+    }
+  }
+}());
