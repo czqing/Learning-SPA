@@ -46,7 +46,7 @@ spa.avtr = (function () {
     jqueryMap = { $container: $container };
   };
 
-  updateAvtar = function ( $target ) {
+  updateAvatar = function ( $target ) {
     var css_map, person_id;
 
     css_map = {
@@ -118,6 +118,96 @@ spa.avtr = (function () {
       updateAvatar( $drag_target );
     };
 
-    //todo
+    onSetchatee = function ( event, arg_map ) {
+      var
+        $nav = $(this),
+        new_chatee = arg_map.new_chatee,
+        old_chatee = arg_map.old_chatee;
+
+      if ( old_chatee ) {
+        $nav
+          .find( '.spa-avtr-box[data-id=' + old_chatee.cid + ']' )
+          .removeClass( 'spa-x-is-chatee' );
+      }
+
+      if ( new_chatee ) {
+        $nav
+          .find( '.spa-avtr-box[data-id=' + new_chatee.cid + ']' )
+          .addClass( 'spa-x-is-chatee' );
+      } 
+    };
+
+    onListchange = function ( event ) {
+      var
+        $nav = $(this),
+        people_db = configMap.people_model.get_db(),
+        user = configMap.people_model.get_user(),
+        chatee = configMap.chat_model.get_chatee() || {},
+        $box;
+
+      $nav.empty();
+      if ( user.get_is_anon() ) { return false; }
+      
+      people_db().each( function ( person, idx ) {
+        var class_list;
+        if ( person.get_is_anon() ) { return true; }
+        class_list = [ 'spa-avtr-box' ];
+
+        if ( person.id === chatee.id ) {
+          class_list.push( 'spa-x-is-chatee' );
+        }
+
+        if ( person.get_is_user() ) {
+          class_list.push( 'spa-x-is-user' );
+        }
+
+        $box = $('<div/>')
+          .addClass( class_list.join('  ') )
+          .css( person.css_map )
+          .attr( 'data-id', String( person.id ) )
+          .prop( 'title', spa.util_b.encodeHtml( person.name ) )
+          .text( person.name )
+          .appendTo( $nav );
+      });
+    };
   };
-  return {}; }());
+
+  onLogout = function () {
+    jqueryMap.$container.empty();
+  };
+
+  //public methods
+  configModule = function ( input_map ) {
+    spa.util.setConfigMap({
+      input_map: input_map,
+      settable_map: configMap.settable_map,
+      config_map: configMap
+    });
+    return true;
+  };
+
+  initModule = function ( $container ) {
+    setJqueryMap( $container );
+
+    //bind model global events
+    $.gevent.subscribe( $container, 'spa-setchatee', onSetchatee );
+    $.gevent.subscribe( $container, 'spa-listchange', onListchange );
+    $.gevent.subscribe( $container, 'spa-logout', onLogout );
+
+    //bind action
+    $container
+      .bind( 'utap', onTapNav )
+      .bind( 'uheldstart', onHeldstartNav )
+      .bind( 'uheldmove', onHeldmoveNav )
+      .bind( 'uheldend', onHeldendNav );
+
+    return true;
+  };
+
+
+  //return public methods
+  return {
+    configModule: configModule,
+    initModule: initModule
+  };
+}());
