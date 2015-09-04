@@ -7,7 +7,8 @@
 'use strict';
 var
   configRoutes,
-  crud = require('./crud'),
+  crud = require( './crud' ),
+  chat = require( './chat' ),
   makeMongoId = crud.makeMongoId;
 
 //public methods
@@ -62,6 +63,8 @@ configRoutes = function ( app, server ) {
       function ( result_map ) { response.send( result_map ); }
     );
   });
+
+  chat.connect( server );
 };
 
 module.exports = { configRoutes : configRoutes };
