@@ -15,7 +15,7 @@ spa.model = (function () {
       is_connected: false,
       people_db: TAFFY()
     },
-    isFakeData = true,
+    isFakeData = false,
     personProto, makeCid, clearPeopleDb, completeLogin,
     makePerson, removePerson, people, chat, initModule;
 
