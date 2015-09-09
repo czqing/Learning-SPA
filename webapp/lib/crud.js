@@ -12,6 +12,7 @@ var
   mongodb = require( 'mongodb' ),
   fsHandle = require( 'fs' ),
   JSV = require('JSV').JSV,
+  cache = require( './cache' ),
 
   mongoServer = new mongodb.Server(
     'localhost',
@@ -79,14 +80,14 @@ constructObj = function ( obj_type, obj_map, callback ) {
               obj_map,
               options_map,
               function ( inner_error, result_map ) {
-                response.send( result_map );
+                callback( result_map );
               }
             );
           }
         );
       }
       else {
-        response.send({
+        callback({
           error_msg: 'Input document not valid',
           error_lsit: error_list
         });
@@ -95,24 +96,26 @@ constructObj = function ( obj_type, obj_map, callback ) {
   );
 };
 
-readObj = function ( obj_type, find_map, feilds_map, callback ) {
+readObj = function ( obj_type, find_map, fields_map, callback ) {
   var type_check_map = checkType( obj_type );
   if ( type_check_map ) {
     callback( type_check_map );
     return;
   }
 
-  dbHandle.collection(
-    request.params.obj_type,
-    function ( outer_error, collection ) {
-      collection.findOne(
-        find_map,
-        function ( inner_error, result_map ) {
-          response.send( result_map );
-        }
-      );
-    }
-  );
+  cache.getValue( find_map, callback, function () {
+    dbHandle.collection(
+      obj_type,
+      function ( outer_error, collection ) {
+        collection.find( find_map, fields_map ).toArray(
+          function ( inner_error, map_list ) {
+            cache.setValue( find_map, map_list );
+            callback( map_list );
+          }
+        );
+      }
+    );
+  });
 };
 
 updateObj = function ( obj_type, find_map, set_map, callback ) {
@@ -123,32 +126,25 @@ updateObj = function ( obj_type, find_map, set_map, callback ) {
   }
 
   checkSchema(
-    obj_type, obj_map,
+    obj_type, set_map,
     function ( error_list ) {
       if ( error_list.length === 0 ) {
         dbHandle.collection(
           obj_type,
           function ( outer_error, collection ) {
-            var
-              sort_order = [],
-              options_map = {
-                'new': true, upsert: false, safe: true
-              };
-
-            collection.findAndModify(
+            collection.update(
               find_map,
-              sort_order,
-              obj_map,
-              options_map,
-              function ( inner_error, updated_map ) {
-                response.send( updated_map );
+              { $set: set_map },
+              { safe: true, multi: true, upsert: false },
+              function ( inner_error, update_count ) {
+                callback( { update_count: update_count } );
               }
             );
           }
         );
       }
       else {
-        response.send({
+        callback({
           error_msg: 'Input document not valid',
           error_list: error_list
         });
@@ -164,8 +160,9 @@ destroyObj = function ( obj_type, find_map, callback) {
     return;
   }
 
+  cache.deleteKey( find_map );
   dbHandle.collection(
-    request.params.obj_type,
+    obj_type,
     function ( outer_error, collection ) {
       var options_map = { safe: true, single: true };
 
@@ -173,7 +170,7 @@ destroyObj = function ( obj_type, find_map, callback) {
         find_map,
         options_map,
         function ( inner_error, delete_count ) {
-          response.send({ delete_count: delete_count });
+          callback({ delete_count: delete_count });
         }
       );
     }
